@@ -16,7 +16,9 @@ dist/
 .env.*.local
 
 # Database & Local Artifacts
+backend/project_evaluator.db
 backend/cyberarena.db
+backend/*.db
 backend/.env
 *.sqlite3
 

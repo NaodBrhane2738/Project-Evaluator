@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "cyberarena.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "project_evaluator.db")
 
 def init_sqlite_db():
     conn = sqlite3.connect(DB_PATH)

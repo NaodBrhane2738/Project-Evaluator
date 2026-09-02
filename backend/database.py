@@ -2,8 +2,14 @@ import sqlite3
 import json
 import os
 import uuid
-
-DB_PATH = os.path.join(os.path.dirname(__file__), "cyberarena.db")
+DB_PATH = os.path.join(os.path.dirname(__file__), "project_evaluator.db")
+_old_db = os.path.join(os.path.dirname(__file__), "cyberarena.db")
+if not os.path.exists(DB_PATH) and os.path.exists(_old_db):
+    try:
+        import shutil
+        shutil.copyfile(_old_db, DB_PATH)
+    except Exception:
+        pass
 
 class ResponseWrapper:
     def __init__(self, data):

@@ -6,7 +6,7 @@ const rawBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 const BASE = rawBase ? (rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`) : '/api/v1'
 
 function getHeaders(): HeadersInit {
-  const userId = localStorage.getItem('cyberarena_user_id')
+  const userId = localStorage.getItem('project_evaluator_user_id') || localStorage.getItem('cyberarena_user_id')
   return {
     'Content-Type': 'application/json',
     ...(userId ? { 'X-User-Id': userId } : {}),

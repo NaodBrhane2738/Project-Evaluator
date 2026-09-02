@@ -1,5 +1,5 @@
 """
-services/scoring.py — CyberArena Scoring Engine
+services/scoring.py — Project Evaluator Scoring Engine
 
 All scoring logic lives here. The UI never implements ranking logic.
 The backend is the single source of truth.

@@ -1,8 +1,8 @@
-# CyberArena — Project README
+# Project Evaluator — Project README
 
 ## Overview
 
-A full-stack, transparent project-evaluation and ranking platform for a 5-week cybersecurity innovation competition.
+A full-stack, transparent project-evaluation and ranking platform for innovation competitions.
 
 Users submit cybersecurity projects, publicly evaluate them across 8 weighted criteria, and the system automatically ranks them using a deterministic server-side scoring engine with mathematical tie-breaking.
 
@@ -99,7 +99,7 @@ When two projects have identical weighted scores, the system compares criteria i
 
 ## Authentication
 
-CyberArena uses lightweight **nickname-based identity**:
+Project Evaluator uses lightweight **nickname-based identity**:
 
 1. User picks a handle (e.g., `NEXUS`) on first visit
 2. Backend creates a user row and returns a UUID

@@ -89,7 +89,7 @@ export function Dashboard() {
       {/* Header Row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h1 style={{ fontSize: `${1.4 * scale}rem`, fontWeight: 800, margin: 0 }}>CyberArena</h1>
+          <h1 style={{ fontSize: `${1.4 * scale}rem`, fontWeight: 800, margin: 0 }}>Project Evaluator</h1>
           <CompetitionStatus status={status} />
         </div>
         <Button variant="primary" icon={<Plus size={14} />} onClick={() => navigate('/projects/new')}>

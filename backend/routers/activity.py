@@ -23,7 +23,7 @@ def get_activity():
             meta_project = project_name
         
         if act['action'] == 'user_joined':
-            msg = f"{nickname} joined CyberArena"
+            msg = f"{nickname} joined Project Evaluator"
         elif act['action'] == 'project_submitted':
             msg = f"{nickname} submitted \"{meta_project}\""
         elif act['action'] == 'project_rated':

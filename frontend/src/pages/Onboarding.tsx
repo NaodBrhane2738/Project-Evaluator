@@ -106,7 +106,7 @@ export function Onboarding() {
             <Shield size={24} color="#000000" strokeWidth={2.5} />
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#ffffff', letterSpacing: '-0.02em' }}>
-            CyberArena
+            Project Evaluator
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', margin: '4px 0 0' }}>
             5-Week Cybersecurity Competition

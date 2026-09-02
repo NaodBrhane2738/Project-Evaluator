@@ -1,5 +1,5 @@
 """
-auth_deps.py — Nickname-based auth for CyberArena.
+auth_deps.py — Nickname-based auth for Project Evaluator.
 Users are identified by X-User-Id header (UUID stored in their localStorage).
 No JWT, no Supabase Auth.
 """

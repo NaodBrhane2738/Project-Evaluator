@@ -37,6 +37,8 @@ export function AppLayout() {
   const startWidthRef = useRef(sidebarWidth)
 
   const handleSignOut = () => {
+    localStorage.removeItem('project_evaluator_user_id')
+    localStorage.removeItem('project_evaluator_nickname')
     localStorage.removeItem('cyberarena_user_id')
     localStorage.removeItem('cyberarena_nickname')
     navigate('/onboarding', { replace: true })
@@ -133,7 +135,7 @@ export function AppLayout() {
             {!isSidebarCollapsed && (
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '-0.02em', color: '#fff' }}>
-                  CyberArena
+                  Project Evaluator
                 </div>
                 <div
                   style={{

@@ -1,6 +1,6 @@
 """
-seed.py — CyberArena Demo Data
-==============================
+seed.py — Project Evaluator Demo Data
+=====================================
 Populates the local SQLite database with 6 fictional users, 8 cybersecurity projects,
 and realistic ratings that demonstrate:
   - Clear ranking differences
@@ -181,7 +181,7 @@ PROJECTS_DATA = [
 
 def seed():
     db = get_supabase()
-    print("Starting CyberArena seed...")
+    print("Starting Project Evaluator seed...")
 
     # ── Users ──
     USERS = ["NEXUS", "ARES", "ULTRON", "CYBERFOX", "ROOT", "ZERO"]

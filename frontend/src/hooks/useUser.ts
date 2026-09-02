@@ -2,12 +2,16 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 import type { User } from '../types'
 
-const USER_ID_KEY = 'cyberarena_user_id'
-const NICKNAME_KEY = 'cyberarena_nickname'
+const USER_ID_KEY = 'project_evaluator_user_id'
+const NICKNAME_KEY = 'project_evaluator_nickname'
 
 export function useUser() {
-  const [userId, setUserId] = useState<string | null>(localStorage.getItem(USER_ID_KEY))
-  const [nickname, setNickname] = useState<string | null>(localStorage.getItem(NICKNAME_KEY))
+  const [userId, setUserId] = useState<string | null>(
+    localStorage.getItem(USER_ID_KEY) || localStorage.getItem('cyberarena_user_id')
+  )
+  const [nickname, setNickname] = useState<string | null>(
+    localStorage.getItem(NICKNAME_KEY) || localStorage.getItem('cyberarena_nickname')
+  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   

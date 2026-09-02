@@ -1,5 +1,5 @@
 """
-tests/test_scoring.py — CyberArena Scoring Engine Tests
+tests/test_scoring.py — Project Evaluator Scoring Engine Tests
 
 Tests criterion averages, weighted scoring, tie-breaking, ranking.
 All pure unit tests — no DB or HTTP calls.

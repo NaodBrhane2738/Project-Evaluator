@@ -19,7 +19,7 @@ export function JudgePage() {
     <div style={{ minHeight: '100vh', background: '#000', padding: 40, color: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
         <div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, margin: '0 0 8px', letterSpacing: '-0.03em' }}>CyberArena</h1>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, margin: '0 0 8px', letterSpacing: '-0.03em' }}>Project Evaluator</h1>
           <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.8rem', fontWeight: 700 }}>Live Judging Dashboard</p>
         </div>
         <CompetitionStatus status={status} />
