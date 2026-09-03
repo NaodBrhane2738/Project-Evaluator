@@ -186,6 +186,49 @@ class SQLiteClient:
     def table(self, table_name):
         return TableQuery(table_name, self)
 
+class QueryProxy:
+    def __init__(self, query):
+        self._query = query
+
+    def __getattr__(self, name):
+        attr = getattr(self._query, name)
+        if callable(attr):
+            def wrapper(*args, **kwargs):
+                res = attr(*args, **kwargs)
+                if hasattr(res, 'execute'):
+                    return QueryProxy(res)
+                return res
+            return wrapper
+        return attr
+
+    def execute(self):
+        res = self._query.execute()
+        if res is None:
+            return ResponseWrapper(None)
+        return res
+
+class TableProxy:
+    def __init__(self, table):
+        self._table = table
+
+    def __getattr__(self, name):
+        attr = getattr(self._table, name)
+        if callable(attr):
+            def wrapper(*args, **kwargs):
+                res = attr(*args, **kwargs)
+                if hasattr(res, 'execute'):
+                    return QueryProxy(res)
+                return res
+            return wrapper
+        return attr
+
+class SupabaseWrapper:
+    def __init__(self, client):
+        self._client = client
+
+    def table(self, table_name):
+        return TableProxy(self._client.table(table_name))
+
 _supabase_client = None
 
 def get_supabase():
@@ -199,6 +242,7 @@ def get_supabase():
     ):
         if _supabase_client is None:
             from supabase import create_client
-            _supabase_client = create_client(settings.supabase_url, settings.supabase_service_role_key)
+            raw_client = create_client(settings.supabase_url, settings.supabase_service_role_key)
+            _supabase_client = SupabaseWrapper(raw_client)
         return _supabase_client
     return SQLiteClient()

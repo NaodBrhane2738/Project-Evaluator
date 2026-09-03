@@ -14,6 +14,7 @@ CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nickname VARCHAR(20) NOT NULL,
   nickname_lower VARCHAR(20) NOT NULL UNIQUE,  -- for ci uniqueness
+  password_hash VARCHAR(255),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   last_active_at TIMESTAMPTZ DEFAULT NOW()
