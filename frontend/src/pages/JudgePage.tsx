@@ -16,11 +16,11 @@ export function JudgePage() {
   }, [])
 
   return (
-    <div style={{ minHeight: '100vh', background: '#000', padding: 40, color: '#fff' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, margin: '0 0 8px', letterSpacing: '-0.03em' }}>Project Evaluator</h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.8rem', fontWeight: 700 }}>Live Judging Dashboard</p>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.02em' }}>Live Judging Dashboard</h1>
+          <p style={{ color: 'rgba(255,255,255,0.45)', margin: 0, fontSize: '0.85rem' }}>Top 10 competition ranking & presentation view</p>
         </div>
         <CompetitionStatus status={status} />
       </div>

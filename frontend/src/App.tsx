@@ -24,7 +24,6 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/judge" element={<JudgePage />} />
           <Route element={<NicknameGate><AppLayout /></NicknameGate>}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
@@ -32,6 +31,7 @@ export default function App() {
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/compare" element={<Comparison />} />
+            <Route path="/judge" element={<JudgePage />} />
             <Route path="/admin" element={<AdminPanel />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

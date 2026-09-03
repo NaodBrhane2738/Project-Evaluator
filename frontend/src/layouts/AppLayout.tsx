@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  PanelLeft,
 } from 'lucide-react'
 import { useUser } from '../hooks/useUser'
 import { useCompetitionState } from '../hooks/useCompetitionState'
@@ -104,6 +105,7 @@ export function AppLayout() {
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
+          zIndex: 110,
           transition: isDraggingSidebar ? 'none' : 'width 0.2s ease',
         }}
       >
@@ -313,23 +315,34 @@ export function AppLayout() {
           title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           style={{
             position: 'absolute',
-            top: 24,
-            right: -11,
-            width: 22,
-            height: 22,
+            top: 14,
+            right: -13,
+            width: 26,
+            height: 26,
             borderRadius: '50%',
-            background: '#141414',
-            border: '1px solid rgba(255,255,255,0.18)',
-            color: 'rgba(255,255,255,0.7)',
+            background: '#18181b',
+            border: '1px solid rgba(255,255,255,0.22)',
+            color: '#fff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            zIndex: 10,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+            zIndex: 120,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = '#27272a'
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'
+            e.currentTarget.style.transform = 'scale(1.08)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = '#18181b'
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'
+            e.currentTarget.style.transform = 'scale(1)'
           }}
         >
-          {isSidebarCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+          {isSidebarCollapsed ? <ChevronRight size={13} strokeWidth={2.5} /> : <ChevronLeft size={13} strokeWidth={2.5} />}
         </button>
 
         {/* Draggable Sidebar Divider Handle */}
@@ -375,22 +388,57 @@ export function AppLayout() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              fontSize: '0.75rem',
-              color: 'rgba(255,255,255,0.3)',
+              gap: 12,
             }}
           >
-            <span
-              className="anim-pulse-dot"
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? 'Open Sidebar' : 'Collapse Sidebar'}
               style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: 'rgba(74,222,128,0.7)',
-                display: 'inline-block',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: isSidebarCollapsed ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                color: isSidebarCollapsed ? '#fff' : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
-            />
-            <span style={{ fontWeight: 600 }}>Active Workspace</span>
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.12)'
+                e.currentTarget.style.color = '#fff'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = isSidebarCollapsed ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'
+                e.currentTarget.style.color = isSidebarCollapsed ? '#fff' : 'rgba(255,255,255,0.6)'
+              }}
+            >
+              <PanelLeft size={15} />
+            </button>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: '0.75rem',
+                color: 'rgba(255,255,255,0.3)',
+              }}
+            >
+              <span
+                className="anim-pulse-dot"
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: 'rgba(74,222,128,0.7)',
+                  display: 'inline-block',
+                }}
+              />
+              <span style={{ fontWeight: 600 }}>Active Workspace</span>
+            </div>
           </div>
 
           {/* Right Header Toolbar: Size Controller + Cache Manager + Competition Status */}
