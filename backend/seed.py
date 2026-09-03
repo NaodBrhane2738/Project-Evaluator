@@ -19,7 +19,7 @@ from database import get_supabase
 # ─── Deterministic rating tables ──────────────────────────────────────────────
 RATINGS: dict[str, dict[str, dict[str, int]]] = {
     "AI SOC Analyst": {
-        "ARES":     {"demo": 93, "time": 88, "technical_depth": 91, "influence": 90, "authenticity": 85, "simplicity": 88, "market": 92, "scalability": 87},
+        "TITAN":     {"demo": 93, "time": 88, "technical_depth": 91, "influence": 90, "authenticity": 85, "simplicity": 88, "market": 92, "scalability": 87},
         "ULTRON":   {"demo": 91, "time": 85, "technical_depth": 89, "influence": 87, "authenticity": 82, "simplicity": 90, "market": 88, "scalability": 84},
         "CYBERFOX": {"demo": 95, "time": 90, "technical_depth": 92, "influence": 91, "authenticity": 88, "simplicity": 86, "market": 94, "scalability": 89},
         "ROOT":     {"demo": 90, "time": 87, "technical_depth": 88, "influence": 89, "authenticity": 84, "simplicity": 85, "market": 90, "scalability": 86},
@@ -34,27 +34,27 @@ RATINGS: dict[str, dict[str, dict[str, int]]] = {
     },
     "Malware Behavior Observatory": {
         "NEXUS":    {"demo": 88, "time": 83, "technical_depth": 90, "influence": 84, "authenticity": 86, "simplicity": 82, "market": 79, "scalability": 83},
-        "ARES":     {"demo": 87, "time": 82, "technical_depth": 89, "influence": 83, "authenticity": 85, "simplicity": 81, "market": 78, "scalability": 82},
+        "TITAN":     {"demo": 87, "time": 82, "technical_depth": 89, "influence": 83, "authenticity": 85, "simplicity": 81, "market": 78, "scalability": 82},
         "CYBERFOX": {"demo": 89, "time": 85, "technical_depth": 91, "influence": 86, "authenticity": 87, "simplicity": 83, "market": 81, "scalability": 85},
         "ROOT":     {"demo": 87, "time": 83, "technical_depth": 88, "influence": 84, "authenticity": 85, "simplicity": 80, "market": 79, "scalability": 83},
     },
     "Autonomous Incident Response": {
         "NEXUS":    {"demo": 85, "time": 90, "technical_depth": 82, "influence": 88, "authenticity": 80, "simplicity": 91, "market": 86, "scalability": 84},
-        "ARES":     {"demo": 84, "time": 88, "technical_depth": 81, "influence": 87, "authenticity": 79, "simplicity": 90, "market": 85, "scalability": 83},
+        "TITAN":     {"demo": 84, "time": 88, "technical_depth": 81, "influence": 87, "authenticity": 79, "simplicity": 90, "market": 85, "scalability": 83},
         "ULTRON":   {"demo": 86, "time": 89, "technical_depth": 83, "influence": 87, "authenticity": 81, "simplicity": 92, "market": 87, "scalability": 85},
     },
     "Cybersecurity Digital Twin": {
         "NEXUS":    {"demo": 80, "time": 72, "technical_depth": 88, "influence": 82, "authenticity": 91, "simplicity": 70, "market": 77, "scalability": 88},
-        "ARES":     {"demo": 79, "time": 71, "technical_depth": 87, "influence": 81, "authenticity": 90, "simplicity": 69, "market": 76, "scalability": 87},
+        "TITAN":     {"demo": 79, "time": 71, "technical_depth": 87, "influence": 81, "authenticity": 90, "simplicity": 69, "market": 76, "scalability": 87},
         "ULTRON":   {"demo": 81, "time": 73, "technical_depth": 89, "influence": 83, "authenticity": 92, "simplicity": 71, "market": 78, "scalability": 89},
         "ZERO":     {"demo": 80, "time": 72, "technical_depth": 88, "influence": 82, "authenticity": 91, "simplicity": 70, "market": 77, "scalability": 88},
     },
     "Endpoint Behavioral Detection": {
         "NEXUS":    {"demo": 82, "time": 85, "technical_depth": 80, "influence": 79, "authenticity": 78, "simplicity": 87, "market": 84, "scalability": 81},
-        "ARES":     {"demo": 81, "time": 84, "technical_depth": 79, "influence": 78, "authenticity": 77, "simplicity": 86, "market": 83, "scalability": 80},
+        "TITAN":     {"demo": 81, "time": 84, "technical_depth": 79, "influence": 78, "authenticity": 77, "simplicity": 86, "market": 83, "scalability": 80},
     },
     "Threat Intelligence Correlation Engine": {
-        "ARES":     {"demo": 78, "time": 75, "technical_depth": 83, "influence": 80, "authenticity": 79, "simplicity": 74, "market": 81, "scalability": 85},
+        "TITAN":     {"demo": 78, "time": 75, "technical_depth": 83, "influence": 80, "authenticity": 79, "simplicity": 74, "market": 81, "scalability": 85},
         "ULTRON":   {"demo": 77, "time": 74, "technical_depth": 82, "influence": 79, "authenticity": 78, "simplicity": 73, "market": 80, "scalability": 84},
         "CYBERFOX": {"demo": 79, "time": 76, "technical_depth": 84, "influence": 81, "authenticity": 80, "simplicity": 75, "market": 82, "scalability": 86},
     },
@@ -80,7 +80,7 @@ PROJECTS_DATA = [
         "hidden": False,
     },
     {
-        "creator_nick": "ARES",
+        "creator_nick": "TITAN",
         "name": "Attack Path Intelligence Engine",
         "tagline": "Find the kill chain before attackers do",
         "problem": "Enterprise networks have thousands of misconfigurations, credentials, and trust relationships. Attackers use graph-based lateral movement to reach critical assets.",
@@ -164,7 +164,7 @@ PROJECTS_DATA = [
         "hidden": False,
     },
     {
-        "creator_nick": "ARES",
+        "creator_nick": "TITAN",
         "name": "Adaptive Network Defense",
         "tagline": "A firewall that learns from every packet",
         "problem": "Traditional firewalls apply static rules that quickly become outdated.",
@@ -184,7 +184,7 @@ def seed():
     print("Starting Project Evaluator seed...")
 
     # ── Users ──
-    USERS = ["NEXUS", "ARES", "ULTRON", "CYBERFOX", "ROOT", "ZERO"]
+    USERS = ["NEXUS", "TITAN", "ULTRON", "CYBERFOX", "ROOT", "ZERO"]
     user_ids: dict[str, str] = {}
 
     for nick in USERS:

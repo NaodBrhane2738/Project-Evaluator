@@ -51,21 +51,27 @@ def competition_stats():
     db = get_supabase()
 
     projects_count = db.table('projects').select('id', count='exact').eq('hidden', False).execute().count or 0
-    users_count    = db.table('users').select('id', count='exact').execute().count or 0
+    from config import settings
+
+    users_res = db.table('users').select('id, nickname').execute()
+    non_admin_users = [u for u in (users_res.data or []) if not settings.is_admin(u.get('nickname'))]
+    users_count = len(non_admin_users)
+
     ratings_count  = db.table('ratings').select('id', count='exact').execute().count or 0
 
     comp_state = get_competition_state(db) or {}
     status_str = comp_state.get('status', 'voting_open') if isinstance(comp_state, dict) else 'voting_open'
 
-    # Most active evaluator
+    # Most active evaluator (strictly excluding admin)
+    non_admin_ids = {u['id'] for u in non_admin_users}
     ratings_res = db.table('ratings').select('user_id').execute()
     from collections import Counter
-    user_rating_counts = Counter(r['user_id'] for r in (ratings_res.data or []))
+    user_rating_counts = Counter(
+        r['user_id'] for r in (ratings_res.data or [])
+        if r.get('user_id') in non_admin_ids
+    )
     most_active_user_id = user_rating_counts.most_common(1)[0][0] if user_rating_counts else None
-    most_active_nickname = None
-    if most_active_user_id:
-        u = db.table('users').select('nickname').eq('id', most_active_user_id).maybe_single().execute()
-        most_active_nickname = u.data['nickname'] if u.data else None
+    most_active_nickname = next((u['nickname'] for u in non_admin_users if u['id'] == most_active_user_id), None)
 
     # Current #1 project
     projects = list_projects()

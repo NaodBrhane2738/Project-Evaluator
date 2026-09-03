@@ -220,3 +220,20 @@ def test_creator_self_rating_excluded_from_public_score():
     detail_after = client.get(f"/api/v1/projects/{project_id}").json()
     assert detail_after["voter_count"] == 1
     assert detail_after["final_score"] == 80.0
+
+def test_admin_hidden_from_public_endpoints():
+    # Verify ADMIN never appears in the public people leaderboard
+    people_res = client.get("/api/v1/users")
+    assert people_res.status_code == 200
+    people = people_res.json()
+    for user in people:
+        assert user.get("nickname", "").upper() != "ADMIN"
+        assert user.get("nickname_lower", "").lower() != "admin"
+
+    # Verify ADMIN actions never appear in public activity feed
+    act_res = client.get("/api/v1/activity")
+    assert act_res.status_code == 200
+    activities = act_res.json()
+    for act in activities:
+        msg = act.get("message", "").lower()
+        assert not msg.startswith("admin ")

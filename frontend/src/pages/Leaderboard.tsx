@@ -67,7 +67,7 @@ export function Leaderboard() {
         </div>
       ) : tab === 'people' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: Math.round(16 * scale) }}>
-          {people.map((u, i) => (
+          {people.filter(u => u.nickname?.toUpperCase() !== 'ADMIN').map((u, i) => (
             <Card key={u.id} padding={20} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
                 #{i + 1}
@@ -80,7 +80,7 @@ export function Leaderboard() {
               </div>
             </Card>
           ))}
-          {people.length === 0 && <div style={{ color: 'rgba(255,255,255,0.4)' }}>No people data available.</div>}
+          {people.filter(u => u.nickname?.toUpperCase() !== 'ADMIN').length === 0 && <div style={{ color: 'rgba(255,255,255,0.4)' }}>No participants to display.</div>}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: Math.round(12 * scale) }}>

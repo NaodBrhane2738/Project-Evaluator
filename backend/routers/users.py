@@ -145,12 +145,20 @@ def get_user_profile(user_id: str):
     return user
 
 
+from config import settings
+
 @router.get("")
 def get_people_leaderboard():
     """People leaderboard with badges. Uses batch queries to avoid N+1."""
     db = get_supabase()
     users_res = db.table('users').select('*').execute()
     users = users_res.data
+
+    if not users:
+        return []
+
+    # Strictly hide admin accounts from the public people leaderboard
+    users = [u for u in users if not settings.is_admin(u.get('nickname'))]
 
     if not users:
         return []

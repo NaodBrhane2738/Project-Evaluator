@@ -37,4 +37,10 @@ class Settings(BaseSettings):
             return [name.strip() for name in v_stripped.split(',') if name.strip()]
         return v
 
+    def is_admin(self, nickname: str | None) -> bool:
+        if not nickname:
+            return False
+        nicks = self.admin_nicknames if isinstance(self.admin_nicknames, list) else [self.admin_nicknames]
+        return nickname.strip().upper() in [n.strip().upper() for n in nicks]
+
 settings = Settings()

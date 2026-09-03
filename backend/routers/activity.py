@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from database import get_supabase
+from config import settings
 
 router = APIRouter(prefix="/activity", tags=["Activity"])
 
@@ -14,6 +15,10 @@ def get_activity():
     results = []
     for act in (activities_res.data or []):
         nickname = users_map.get(act.get('user_id'), 'Someone')
+        # Strictly hide admin activities from public feed
+        if settings.is_admin(nickname):
+            continue
+
         project_name = projects_map.get(act.get('project_id'), 'a project')
         
         meta = act.get('metadata') or {}
