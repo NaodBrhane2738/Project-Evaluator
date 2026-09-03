@@ -54,7 +54,8 @@ def competition_stats():
     users_count    = db.table('users').select('id', count='exact').execute().count or 0
     ratings_count  = db.table('ratings').select('id', count='exact').execute().count or 0
 
-    comp_state = get_competition_state(db)
+    comp_state = get_competition_state(db) or {}
+    status_str = comp_state.get('status', 'voting_open') if isinstance(comp_state, dict) else 'voting_open'
 
     # Most active evaluator
     ratings_res = db.table('ratings').select('user_id').execute()
@@ -74,7 +75,7 @@ def competition_stats():
         "projects_submitted": projects_count,
         "total_participants": users_count,
         "total_ratings": ratings_count,
-        "competition_status": comp_state.get('status', 'voting_open'),
+        "competition_status": status_str,
         "most_active_evaluator": most_active_nickname,
         "top_project": top_project,
     }

@@ -49,8 +49,10 @@ def submit_rating(project_id: str, request: SubmitRatingRequest, current_user: d
         'metadata': json.dumps({'project_name': project_res.data['name']})
     }).execute()
     
-    all_ratings = db.table('ratings').select('*').eq('project_id', project_id).execute().data
-    return score_project_from_ratings(all_ratings)
+    all_ratings = db.table('ratings').select('*').eq('project_id', project_id).execute().data or []
+    creator_id = project_res.data.get('creator_id')
+    public_ratings = [r for r in all_ratings if r['user_id'] != creator_id]
+    return score_project_from_ratings(public_ratings)
 
 @router.delete("/{project_id}/ratings")
 def delete_my_rating(project_id: str, current_user: dict = Depends(get_current_user)):
@@ -63,8 +65,9 @@ def delete_my_rating(project_id: str, current_user: dict = Depends(get_current_u
     if not existing.data:
         raise HTTPException(status_code=404, detail="Rating not found")
 
-    project_res = db.table('projects').select('name').eq('id', project_id).maybe_single().execute()
+    project_res = db.table('projects').select('name, creator_id').eq('id', project_id).maybe_single().execute()
     project_name = project_res.data['name'] if project_res.data else 'Project'
+    creator_id = project_res.data.get('creator_id') if project_res.data else None
 
     db.table('ratings').delete().eq('id', existing.data['id']).execute()
     db.table('activities').insert({
@@ -74,16 +77,17 @@ def delete_my_rating(project_id: str, current_user: dict = Depends(get_current_u
         'metadata': json.dumps({'project_name': project_name})
     }).execute()
 
-    all_ratings = db.table('ratings').select('*').eq('project_id', project_id).execute().data
-    return score_project_from_ratings(all_ratings)
+    all_ratings = db.table('ratings').select('*').eq('project_id', project_id).execute().data or []
+    public_ratings = [r for r in all_ratings if r['user_id'] != creator_id]
+    return score_project_from_ratings(public_ratings)
 
 @router.get("/{project_id}/ratings")
 def get_ratings(project_id: str):
     db = get_supabase()
-    users_map = {u['id']: u['nickname'] for u in db.table('users').select('id, nickname').execute().data}
+    users_map = {u['id']: u['nickname'] for u in (db.table('users').select('id, nickname').execute().data or [])}
     ratings_res = db.table('ratings').select('*').eq('project_id', project_id).execute()
-    data = ratings_res.data
+    data = ratings_res.data or []
     for r in data:
         r['voter_nickname'] = users_map.get(r['user_id'], 'Unknown')
-        r['is_updated'] = r.get('created_at') != r.get('updated_at')
+        r['is_updated'] = bool(r.get('created_at') and r.get('updated_at') and r.get('created_at') != r.get('updated_at'))
     return data

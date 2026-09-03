@@ -20,8 +20,26 @@ class ClaimNicknameRequest(BaseModel):
             raise ValueError('That nickname is reserved for system use')
         return v
 
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            v_stripped = v.strip()
+            if len(v_stripped) > 128:
+                raise ValueError('Password cannot exceed 128 characters')
+            return v_stripped if v_stripped else None
+        return v
+
 class CheckNicknameRequest(BaseModel):
     nickname: str
+
+    @field_validator('nickname')
+    @classmethod
+    def validate_nickname(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 1 or len(v) > 50:
+            raise ValueError('Nickname must be between 1 and 50 characters')
+        return v
 
 class CheckNicknameResponse(BaseModel):
     exists: bool

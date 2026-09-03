@@ -11,17 +11,46 @@ if not os.path.exists(DB_PATH) and os.path.exists(_old_db):
     except Exception:
         pass
 
+import re
+
+SAFE_IDENT_RE = re.compile(r'^[A-Za-z0-9_]+$')
+
+def validate_ident(name: str) -> str:
+    if not name or not SAFE_IDENT_RE.match(name):
+        raise ValueError(f"Invalid SQL identifier: {name}")
+    return name
+
+def get_sqlite_conn():
+    conn = sqlite3.connect(DB_PATH, timeout=15.0)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON;")
+    cursor.execute("PRAGMA journal_mode = WAL;")
+    cursor.execute("PRAGMA busy_timeout = 5000;")
+    return conn
+
+def format_row(r) -> dict:
+    d = dict(r)
+    if 'metadata' in d and isinstance(d['metadata'], str):
+        try:
+            d['metadata'] = json.loads(d['metadata'])
+        except Exception:
+            pass
+    if 'hidden' in d:
+        d['hidden'] = bool(d['hidden'])
+    return d
+
 class ResponseWrapper:
     def __init__(self, data):
         self.data = data
-        self.count = len(data) if isinstance(data, list) else (1 if data else 0)
+        self.count = len(data) if isinstance(data, list) else (1 if data is not None else 0)
     
     def execute(self):
         return self
 
 class TableQuery:
     def __init__(self, table_name, db_client):
-        self.table_name = table_name
+        self.table_name = validate_ident(table_name)
         self.db_client = db_client
         self._select_cols = "*"
         self._where_clauses = []
@@ -32,21 +61,30 @@ class TableQuery:
         self._is_delete = False
 
     def select(self, cols="*", count=None):
+        if cols != "*":
+            # Validate comma-separated column names
+            for col in cols.split(','):
+                c = col.strip()
+                if c and not SAFE_IDENT_RE.match(c):
+                    raise ValueError(f"Invalid column name: {c}")
         self._select_cols = cols
         return self
 
     def eq(self, column, value):
-        self._where_clauses.append(f"{column} = ?")
+        valid_col = validate_ident(column)
+        self._where_clauses.append(f"{valid_col} = ?")
         self._where_params.append(value)
         return self
 
     def order(self, column, desc=False):
+        valid_col = validate_ident(column)
         direction = "DESC" if desc else "ASC"
-        self._order_by = f"{column} {direction}"
+        self._order_by = f"{valid_col} {direction}"
         return self
 
     def limit(self, count):
-        self._limit = count
+        if count is not None:
+            self._limit = int(count)
         return self
 
     def update(self, data):
@@ -58,72 +96,62 @@ class TableQuery:
         return self
 
     def execute(self):
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        conn = get_sqlite_conn()
+        try:
+            cursor = conn.cursor()
 
-        # Handle delete flow: table('x').delete().eq('id', val).execute()
-        if self._is_delete:
-            sql = f"DELETE FROM {self.table_name}"
+            # Handle delete flow: table('x').delete().eq('id', val).execute()
+            if self._is_delete:
+                sql = f"DELETE FROM {self.table_name}"
+                if self._where_clauses:
+                    sql += " WHERE " + " AND ".join(self._where_clauses)
+                cursor.execute(sql, self._where_params)
+                conn.commit()
+                return ResponseWrapper([])
+
+            # Handle update flow: table('x').update({...}).eq('id', val).execute()
+            if self._update_data is not None:
+                row = dict(self._update_data)
+                for k in row.keys():
+                    validate_ident(k)
+
+                if 'metadata' in row and isinstance(row['metadata'], (dict, list)):
+                    row['metadata'] = json.dumps(row['metadata'])
+                if 'hidden' in row:
+                    row['hidden'] = 1 if row['hidden'] else 0
+
+                set_clauses = [f"{k} = ?" for k in row.keys()]
+                params = list(row.values()) + self._where_params
+
+                sql = f"UPDATE {self.table_name} SET {', '.join(set_clauses)}"
+                if self._where_clauses:
+                    sql += " WHERE " + " AND ".join(self._where_clauses)
+
+                cursor.execute(sql, params)
+                conn.commit()
+
+                sql_fetch = f"SELECT * FROM {self.table_name}"
+                if self._where_clauses:
+                    sql_fetch += " WHERE " + " AND ".join(self._where_clauses)
+                cursor.execute(sql_fetch, self._where_params)
+                rows = [format_row(r) for r in cursor.fetchall()]
+                return ResponseWrapper(rows)
+
+            # Standard SELECT flow
+            sql = f"SELECT {self._select_cols} FROM {self.table_name}"
             if self._where_clauses:
                 sql += " WHERE " + " AND ".join(self._where_clauses)
+            if self._order_by:
+                sql += f" ORDER BY {self._order_by}"
+            if self._limit is not None:
+                sql += f" LIMIT {self._limit}"
+
             cursor.execute(sql, self._where_params)
-            conn.commit()
+            rows = cursor.fetchall()
+            data = [format_row(r) for r in rows]
+            return ResponseWrapper(data)
+        finally:
             conn.close()
-            return ResponseWrapper([])
-
-        # Handle update flow: table('x').update({...}).eq('id', val).execute()
-        if self._update_data is not None:
-            row = dict(self._update_data)
-            if 'metadata' in row and isinstance(row['metadata'], (dict, list)):
-                row['metadata'] = json.dumps(row['metadata'])
-            if 'hidden' in row:
-                row['hidden'] = 1 if row['hidden'] else 0
-
-            set_clauses = [f"{k} = ?" for k in row.keys()]
-            params = list(row.values()) + self._where_params
-
-            sql = f"UPDATE {self.table_name} SET {', '.join(set_clauses)}"
-            if self._where_clauses:
-                sql += " WHERE " + " AND ".join(self._where_clauses)
-
-            cursor.execute(sql, params)
-            conn.commit()
-
-            sql_fetch = f"SELECT * FROM {self.table_name}"
-            if self._where_clauses:
-                sql_fetch += " WHERE " + " AND ".join(self._where_clauses)
-            cursor.execute(sql_fetch, self._where_params)
-            rows = [dict(r) for r in cursor.fetchall()]
-            conn.close()
-            return ResponseWrapper(rows)
-
-        # Standard SELECT flow
-        sql = f"SELECT {self._select_cols} FROM {self.table_name}"
-        if self._where_clauses:
-            sql += " WHERE " + " AND ".join(self._where_clauses)
-        if self._order_by:
-            sql += f" ORDER BY {self._order_by}"
-        if self._limit:
-            sql += f" LIMIT {self._limit}"
-
-        cursor.execute(sql, self._where_params)
-        rows = cursor.fetchall()
-
-        data = []
-        for r in rows:
-            d = dict(r)
-            if 'metadata' in d and isinstance(d['metadata'], str):
-                try:
-                    d['metadata'] = json.loads(d['metadata'])
-                except Exception:
-                    pass
-            if 'hidden' in d:
-                d['hidden'] = bool(d['hidden'])
-            data.append(d)
-
-        conn.close()
-        return ResponseWrapper(data)
 
     def maybe_single(self):
         res = self.execute()
@@ -134,53 +162,51 @@ class TableQuery:
         return self.maybe_single()
 
     def insert(self, data):
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        conn = get_sqlite_conn()
+        try:
+            cursor = conn.cursor()
 
-        if isinstance(data, dict):
-            items = [data]
-        else:
-            items = data
-
-        inserted = []
-        for item in items:
-            row = dict(item)
-            if 'id' not in row and self.table_name != 'competition_state':
-                row['id'] = str(uuid.uuid4())
-
-            if 'metadata' in row and isinstance(row['metadata'], (dict, list)):
-                row['metadata'] = json.dumps(row['metadata'])
-            if 'hidden' in row:
-                row['hidden'] = 1 if row['hidden'] else 0
-
-            cols = list(row.keys())
-            vals = list(row.values())
-            placeholders = ", ".join(["?"] * len(cols))
-            col_names = ", ".join(cols)
-
-            sql = f"INSERT INTO {self.table_name} ({col_names}) VALUES ({placeholders})"
-            cursor.execute(sql, vals)
-            
-            fetch_id = row.get('id')
-            if fetch_id:
-                cursor.execute(f"SELECT * FROM {self.table_name} WHERE id = ?", (fetch_id,))
+            if isinstance(data, dict):
+                items = [data]
             else:
-                cursor.execute(f"SELECT * FROM {self.table_name} WHERE rowid = last_insert_rowid()")
-            
-            inserted_row = dict(cursor.fetchone())
-            if 'metadata' in inserted_row and isinstance(inserted_row['metadata'], str):
-                try:
-                    inserted_row['metadata'] = json.loads(inserted_row['metadata'])
-                except Exception:
-                    pass
-            if 'hidden' in inserted_row:
-                inserted_row['hidden'] = bool(inserted_row['hidden'])
-            inserted.append(inserted_row)
+                items = list(data)
 
-        conn.commit()
-        conn.close()
-        return ResponseWrapper(inserted)
+            inserted = []
+            for item in items:
+                row = dict(item)
+                for k in row.keys():
+                    validate_ident(k)
+
+                if 'id' not in row and self.table_name != 'competition_state':
+                    row['id'] = str(uuid.uuid4())
+
+                if 'metadata' in row and isinstance(row['metadata'], (dict, list)):
+                    row['metadata'] = json.dumps(row['metadata'])
+                if 'hidden' in row:
+                    row['hidden'] = 1 if row['hidden'] else 0
+
+                cols = list(row.keys())
+                vals = list(row.values())
+                placeholders = ", ".join(["?"] * len(cols))
+                col_names = ", ".join(cols)
+
+                sql = f"INSERT INTO {self.table_name} ({col_names}) VALUES ({placeholders})"
+                cursor.execute(sql, vals)
+                
+                fetch_id = row.get('id')
+                if fetch_id:
+                    cursor.execute(f"SELECT * FROM {self.table_name} WHERE id = ?", (fetch_id,))
+                else:
+                    cursor.execute(f"SELECT * FROM {self.table_name} WHERE rowid = last_insert_rowid()")
+                
+                fetched = cursor.fetchone()
+                if fetched:
+                    inserted.append(format_row(fetched))
+
+            conn.commit()
+            return ResponseWrapper(inserted)
+        finally:
+            conn.close()
 
 class SQLiteClient:
     def table(self, table_name):

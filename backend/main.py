@@ -1,16 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from config import settings
 from routers import users, projects, ratings, leaderboard, activity, admin
 from database import get_supabase
-
 from contextlib import asynccontextmanager
 import os
-
-limiter = Limiter(key_func=get_remote_address)
+from limiter import limiter
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -75,7 +72,23 @@ if os.path.exists(frontend_dist):
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        target_file = os.path.join(frontend_dist, full_path)
-        if full_path and os.path.isfile(target_file):
+        # Prevent null bytes and directory traversal attacks
+        if "\0" in full_path:
+            return FileResponse(os.path.join(frontend_dist, "index.html"))
+
+        safe_path = os.path.normpath(full_path).lstrip("/\\")
+        target_file = os.path.abspath(os.path.join(frontend_dist, safe_path))
+
+        # Strictly ensure the canonical path resides inside frontend_dist
+        try:
+            is_inside = os.path.commonpath([frontend_dist, target_file]) == frontend_dist
+        except ValueError:
+            is_inside = False
+
+        if is_inside and os.path.isfile(target_file):
             return FileResponse(target_file)
-        return FileResponse(os.path.join(frontend_dist, "index.html"))
+
+        index_file = os.path.join(frontend_dist, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
+        return {"error": "Frontend not built"}

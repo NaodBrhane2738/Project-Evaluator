@@ -46,8 +46,12 @@ class CacheManager {
     // 1. Memory check
     const item = this.memCache.get(key) as CacheItem<T> | undefined
     if (item) {
+      if (item.ttl && Date.now() - item.timestamp > item.ttl) {
+        this.remove(key)
+        return null
+      }
       if (maxAgeMs && Date.now() - item.timestamp > maxAgeMs) {
-        return item.data // Can still return stale data
+        return item.data
       }
       return item.data
     }
@@ -57,6 +61,10 @@ class CacheManager {
       const raw = localStorage.getItem(STORAGE_PREFIX + key)
       if (raw) {
         const parsed: CacheItem<T> = JSON.parse(raw)
+        if (parsed.ttl && Date.now() - parsed.timestamp > parsed.ttl) {
+          this.remove(key)
+          return null
+        }
         this.memCache.set(key, parsed)
         return parsed.data
       }

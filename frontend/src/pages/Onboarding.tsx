@@ -52,6 +52,10 @@ export function Onboarding() {
 
   const handleModalAuth = async (usePassword: boolean) => {
     if (!accountInfo) return
+    if (accountInfo.hasPassword && (!password || !password.trim())) {
+      setModalError('Please enter your account password.')
+      return
+    }
     setModalError(null)
     setIsSubmittingModal(true)
 
@@ -240,9 +244,9 @@ export function Onboarding() {
             <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, margin: '0 0 18px 0' }}>
               {accountInfo.exists ? (
                 accountInfo.hasPassword ? (
-                  <span>This account is protected by a password. Enter it below, or click continue if you'd like to try without one.</span>
+                  <span>This account is protected by a password. Please enter your password to sign in.</span>
                 ) : (
-                  <span>This handle is registered. You can enter a password to attach/verify it, or sign in directly without one <strong>(Password is completely optional)</strong>.</span>
+                  <span>This handle is registered without a password. You can enter a password to attach one, or proceed without a password.</span>
                 )
               ) : (
                 <span>You can optionally set a password now to secure your new handle, or proceed without a password <strong>(Completely optional)</strong>.</span>
@@ -253,7 +257,7 @@ export function Onboarding() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 5 }}>
-                  {accountInfo.hasPassword ? 'Account Password' : 'Password (Optional)'}
+                  {accountInfo.hasPassword ? 'Account Password (Required)' : 'Password (Optional)'}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Lock
@@ -270,7 +274,7 @@ export function Onboarding() {
                     type={showPasswordText ? 'text' : 'password'}
                     className="input"
                     style={{ paddingLeft: 36, paddingRight: 36 }}
-                    placeholder={accountInfo.hasPassword ? 'Enter password…' : 'Enter optional password…'}
+                    placeholder={accountInfo.hasPassword ? 'Enter your password…' : 'Enter optional password…'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     onKeyDown={e => {
@@ -321,25 +325,38 @@ export function Onboarding() {
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
-                {password.trim().length > 0 && (
+                {accountInfo.hasPassword ? (
                   <Button
                     variant="primary"
                     fullWidth
                     loading={isSubmittingModal}
                     onClick={() => handleModalAuth(true)}
                   >
-                    {accountInfo.exists ? 'Sign In with Password' : 'Set Password & Enter'}
+                    Sign In with Password
                   </Button>
-                )}
+                ) : (
+                  <>
+                    {password.trim().length > 0 && (
+                      <Button
+                        variant="primary"
+                        fullWidth
+                        loading={isSubmittingModal}
+                        onClick={() => handleModalAuth(true)}
+                      >
+                        {accountInfo.exists ? 'Attach Password & Enter' : 'Set Password & Enter'}
+                      </Button>
+                    )}
 
-                <Button
-                  variant={password.trim().length > 0 ? 'ghost' : 'primary'}
-                  fullWidth
-                  loading={isSubmittingModal && !password.trim()}
-                  onClick={() => handleModalAuth(false)}
-                >
-                  Continue without Password (Optional)
-                </Button>
+                    <Button
+                      variant={password.trim().length > 0 ? 'ghost' : 'primary'}
+                      fullWidth
+                      loading={isSubmittingModal && !password.trim()}
+                      onClick={() => handleModalAuth(false)}
+                    >
+                      Continue without Password (Optional)
+                    </Button>
+                  </>
+                )}
 
                 <button
                   type="button"

@@ -1,25 +1,67 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from database import get_supabase
 from schemas.users import ClaimNicknameRequest, CheckNicknameRequest
 from auth_deps import get_current_user
+from limiter import limiter
+from datetime import datetime, timezone
 import json
 import hashlib
+import hmac
+import secrets
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+    """Hash password using PBKDF2-HMAC-SHA256 with 100,000 iterations and a secure random salt."""
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+    return f"pbkdf2_sha256$100000${salt}${key.hex()}"
+
+
+def verify_password(password: str, stored_hash: str) -> tuple[bool, bool]:
+    """
+    Verify password using constant-time comparison.
+    Supports both modern salted PBKDF2 and legacy SHA-256 (for auto-upgrade).
+    Returns (is_valid, needs_upgrade).
+    """
+    if not stored_hash:
+        return False, False
+
+    if stored_hash.startswith("pbkdf2_sha256$"):
+        try:
+            parts = stored_hash.split("$")
+            if len(parts) != 4:
+                return False, False
+            iterations = int(parts[1])
+            salt = parts[2]
+            expected_key = parts[3]
+            actual_key = hashlib.pbkdf2_hmac(
+                'sha256',
+                password.encode('utf-8'),
+                salt.encode('utf-8'),
+                iterations
+            ).hex()
+            return hmac.compare_digest(actual_key, expected_key), False
+        except Exception:
+            return False, False
+
+    # Check legacy SHA-256
+    legacy_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    if hmac.compare_digest(legacy_hash, stored_hash):
+        return True, True
+    return False, False
 
 
 @router.post("/check")
-def check_nickname(request: CheckNicknameRequest):
+@limiter.limit("60/minute")
+def check_nickname(request: Request, body: CheckNicknameRequest):
     """Check if a nickname already exists and whether it has a password set."""
     db = get_supabase()
-    nickname_lower = request.nickname.strip().lower()
+    nickname_lower = body.nickname.strip().lower()
     existing = db.table('users').select('*').eq('nickname_lower', nickname_lower).maybe_single().execute()
     if not existing.data:
-        return {'exists': False, 'has_password': False, 'nickname': request.nickname.strip()}
+        return {'exists': False, 'has_password': False, 'nickname': body.nickname.strip()}
     user = existing.data
     return {
         'exists': True,
@@ -29,37 +71,48 @@ def check_nickname(request: CheckNicknameRequest):
 
 
 @router.post("")
-def claim_nickname(request: ClaimNicknameRequest):
+@limiter.limit("20/minute")
+def claim_nickname(request: Request, body: ClaimNicknameRequest):
     db = get_supabase()
-    nickname_lower = request.nickname.strip().lower()
+    nickname_lower = body.nickname.strip().lower()
 
     # If user already exists, log them back into their account
     existing = db.table('users').select('*').eq('nickname_lower', nickname_lower).maybe_single().execute()
+    now_iso = datetime.now(timezone.utc).isoformat()
+
     if existing.data:
         user = existing.data
         stored_hash = user.get('password_hash')
 
         # If user has a password set, verify it
         if stored_hash:
-            if not request.password:
+            if not body.password:
                 raise HTTPException(status_code=400, detail="This account is protected by a password. Please enter your password.")
-            if hash_password(request.password) != stored_hash:
+            is_valid, needs_upgrade = verify_password(body.password, stored_hash)
+            if not is_valid:
                 raise HTTPException(status_code=400, detail="Incorrect password. Please try again.")
-        elif request.password:
+            if needs_upgrade:
+                new_hash = hash_password(body.password)
+                db.table('users').update({'password_hash': new_hash}).eq('id', user['id']).execute()
+        elif body.password:
             # Account had no password yet, but user optionally entered one to set it
-            new_hash = hash_password(request.password)
+            new_hash = hash_password(body.password)
             db.table('users').update({'password_hash': new_hash}).eq('id', user['id']).execute()
 
-        db.table('users').update({'last_active_at': 'now()'}).eq('id', user['id']).execute()
+        try:
+            db.table('users').update({'last_active_at': now_iso}).eq('id', user['id']).execute()
+        except Exception:
+            pass
+
         return {'id': user['id'], 'nickname': user['nickname'], 'created_at': user['created_at']}
 
     # Otherwise, create a new user account
     user_data = {
-        'nickname': request.nickname.strip(),
+        'nickname': body.nickname.strip(),
         'nickname_lower': nickname_lower,
     }
-    if request.password:
-        user_data['password_hash'] = hash_password(request.password)
+    if body.password:
+        user_data['password_hash'] = hash_password(body.password)
 
     result = db.table('users').insert(user_data).execute()
     user = result.data[0]
@@ -84,7 +137,9 @@ def get_user_profile(user_id: str):
     projects_submitted = db.table('projects').select('id', count='exact').eq('creator_id', user_id).execute()
     projects_rated     = db.table('ratings').select('id', count='exact').eq('user_id', user_id).execute()
 
-    user = user_res.data
+    user = dict(user_res.data)
+    # Strictly strip password_hash to prevent sensitive data leakage
+    user.pop('password_hash', None)
     user['projects_submitted'] = projects_submitted.count or 0
     user['projects_rated']     = projects_rated.count or 0
     return user
@@ -125,13 +180,16 @@ def get_people_leaderboard():
 
     enriched = []
     for user in users:
-        uid = user['id']
-        user['projects_submitted'] = projects_by_user.get(uid, 0)
-        user['projects_rated']     = ratings_by_user.get(uid, 0)
-        user['total_ratings']      = ratings_by_user.get(uid, 0)
-        user['activity_score']     = activities_by_user.get(uid, 0)
-        user['badges']             = []
-        enriched.append(user)
+        u = dict(user)
+        # Strictly strip password_hash
+        u.pop('password_hash', None)
+        uid = u['id']
+        u['projects_submitted'] = projects_by_user.get(uid, 0)
+        u['projects_rated']     = ratings_by_user.get(uid, 0)
+        u['total_ratings']      = ratings_by_user.get(uid, 0)
+        u['activity_score']     = activities_by_user.get(uid, 0)
+        u['badges']             = []
+        enriched.append(u)
 
     # Assign badges (top performer per category)
     sorted_by_ratings  = sorted(enriched, key=lambda u: u['projects_rated'],     reverse=True)
@@ -149,7 +207,7 @@ def get_people_leaderboard():
 
     # Early Contributor — first user to join
     if enriched:
-        earliest = min(enriched, key=lambda u: u['created_at'])
+        earliest = min(enriched, key=lambda u: u.get('created_at') or '9999')
         if 'Early Contributor' not in earliest['badges']:
             earliest['badges'].append('Early Contributor')
 

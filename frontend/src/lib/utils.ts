@@ -1,8 +1,11 @@
-export function timeAgo(dateString: string): string {
+export function timeAgo(dateString?: string | null): string {
+  if (!dateString) return 'just now'
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) return 'recently'
   const now = new Date()
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
+  if (seconds < 5) return 'just now'
   if (seconds < 60) return `${seconds}s ago`
   const minutes = Math.floor(seconds / 60)
   if (minutes < 60) return `${minutes}m ago`

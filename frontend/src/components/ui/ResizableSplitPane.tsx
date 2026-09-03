@@ -72,8 +72,27 @@ export function ResizableSplitPane({
     }
   }, [splitPercent, storageKey])
 
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 768 : false))
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const handleReset = () => {
     setSplitPercent(defaultSplitPercent)
+  }
+
+  if (isMobile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', ...style }}>
+        <div style={{ width: '100%' }}>{left}</div>
+        <div style={{ width: '100%' }}>{right}</div>
+      </div>
+    )
   }
 
   return (

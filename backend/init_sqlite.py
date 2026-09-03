@@ -4,9 +4,12 @@ import os
 DB_PATH = os.path.join(os.path.dirname(__file__), "project_evaluator.db")
 
 def init_sqlite_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("PRAGMA foreign_keys = ON;")
+    conn = sqlite3.connect(DB_PATH, timeout=15.0)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON;")
+        cursor.execute("PRAGMA journal_mode = WAL;")
+        cursor.execute("PRAGMA busy_timeout = 5000;")
 
     # competition_state
     cursor.execute("""
@@ -121,7 +124,8 @@ def init_sqlite_db():
     """)
 
     conn.commit()
-    conn.close()
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
     init_sqlite_db()
